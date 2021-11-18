@@ -23,8 +23,6 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="de.blinkt.openvpn.activities.DisconnectVPN" />
-
         <service
             android:name="de.blinkt.openvpn.core.OpenVPNService"
             android:exported="false"

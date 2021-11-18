@@ -10,12 +10,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.util.HashSet;
 
 import de.blinkt.openvpn.VpnProfile;
 import de.blinkt.openvpn.activities.DisconnectVPN;
+import de.blinkt.openvpn.api.IOpenVPNAPIService;
 import de.blinkt.openvpn.core.ConfigParser;
+import de.blinkt.openvpn.core.IOpenVPNServiceInternal;
 import de.blinkt.openvpn.core.ProfileManager;
 import de.blinkt.openvpn.core.VPNLaunchHelper;
+import de.blinkt.openvpn.core.VpnStatus;
 
 public class OpenVPNHelper {
 
@@ -59,9 +63,14 @@ public class OpenVPNHelper {
         }
     }
 
-    public static void stopOpenVPN(Context context) {
-        Intent disconnectVPN = new Intent(context, DisconnectVPN.class);
-        disconnectVPN.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        context.startActivity(disconnectVPN);
+    public static void stopOpenVPN(Context context, IOpenVPNServiceInternal service) {
+        ProfileManager.setConntectedVpnProfileDisconnected(context);
+        if (service != null) {
+            try {
+                service.stopVPN(false);
+            } catch (RemoteException e) {
+                VpnStatus.logException(e);
+            }
+        }
     }
 }

@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.Activity;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.net.VpnService;
@@ -26,6 +27,7 @@ import java.io.StringReader;
 import de.blinkt.openvpn.VpnProfile;
 import de.blinkt.openvpn.activities.DisconnectVPN;
 import de.blinkt.openvpn.core.ConfigParser;
+import de.blinkt.openvpn.core.IOpenVPNServiceInternal;
 import de.blinkt.openvpn.core.OpenVPNService;
 import de.blinkt.openvpn.core.OpenVPNThread;
 import de.blinkt.openvpn.core.OpenVPNThreadv3;
@@ -35,20 +37,20 @@ import de.blinkt.openvpn.core.VpnStatus;
 
 public class MainActivity extends AppCompatActivity {
 
-    private OpenVPNService openVPNService;
     private Switch aSwitch;
-    private OpenVPNService openVpnService;
-
+    private IOpenVPNServiceInternal mService;
     private ServiceConnection mConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
 
+        @Override
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            mService = IOpenVPNServiceInternal.Stub.asInterface(service);
         }
 
         @Override
-        public void onServiceDisconnected(ComponentName name) {
-
+        public void onServiceDisconnected(ComponentName arg0) {
+            mService = null;
         }
+
     };
 
     private ActivityResultLauncher<Intent> vpnLauncher = registerForActivityResult(
@@ -73,7 +75,6 @@ public class MainActivity extends AppCompatActivity {
 
         aSwitch = (Switch) findViewById(R.id.main_sw);
 
-        openVpnService = new OpenVPNService();
         VpnStatus.initLogCache(getCacheDir());
 
         aSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -83,6 +84,20 @@ public class MainActivity extends AppCompatActivity {
                 stopOpenVPN();
             }
         });
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Intent intent = new Intent(this, OpenVPNService.class);
+        intent.setAction(OpenVPNService.START_SERVICE);
+        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        unbindService(mConnection);
     }
 
     private void prepareVpn() {
@@ -105,6 +120,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void stopOpenVPN() {
-        OpenVPNHelper.stopOpenVPN(getApplicationContext());
+        OpenVPNHelper.stopOpenVPN(getApplicationContext(), mService);
     }
 }
